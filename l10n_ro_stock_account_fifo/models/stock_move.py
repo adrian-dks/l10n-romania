@@ -21,7 +21,7 @@ class StockMove(models.Model):
 
     def _create_track_svl(self, value_list, **kwargs):
         sudo_svl = self.env["stock.valuation.layer"].sudo()
-        for index, value in enumerate(value_list):
+        for _index, value in enumerate(value_list):
             svl_value = sudo_svl._pre_process_value(
                 value
             )  # eliminam datele de tracking, filtram valorile SVL
@@ -162,9 +162,6 @@ class StockMove(models.Model):
             )
 
     def _create_out_svl(self, forced_quantity=None):
-        _logger.debug(
-            f"SVL-OUT:{forced_quantity, self.company_id.l10n_ro_accounting, self.env.context.get('standard')}"
-        )
         if self.env.context.get("standard") and self.company_id.l10n_ro_accounting:
             svls = self.env["stock.valuation.layer"]
             for move in self:
@@ -177,9 +174,6 @@ class StockMove(models.Model):
                     valued_quantity = valued_move_line.product_uom_id._compute_quantity(
                         valued_move_line.qty_done, move.product_id.uom_id
                     )
-                    _logger.debug(
-                        f"SVL-OUT:{self.env.context.get('valued_type', ''), valued_move_line, valued_quantity}"
-                    )
                     if float_is_zero(
                         forced_quantity or valued_quantity,
                         precision_rounding=move.product_id.uom_id.rounding,
@@ -191,7 +185,6 @@ class StockMove(models.Model):
                             valued_move_line.company_id,
                         )
                     )
-                    _logger.debug(f"SVL-LIST:{svl_vals_list}")
                     for svl_vals in svl_vals_list:
                         svl_vals.update(move._prepare_common_svl_vals())
                         svl_vals.update(

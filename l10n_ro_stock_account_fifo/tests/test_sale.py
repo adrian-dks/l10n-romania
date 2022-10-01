@@ -21,6 +21,8 @@ class TestStockSale(TestStockCommon):
              vandut
              - valoarea din stoc trebuie sa fie egala cu valoarea din contabilitate
              - in contul de venituri trebuie sa fie inregistrata valoarea de vanzare
+        Fara l10n_ro_accounting descarcarea de gestiune se face pe factura,
+        anglo-saxon standard
         """
 
         self.env.company.l10n_ro_accounting = False

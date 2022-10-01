@@ -233,9 +233,14 @@ class TestStockCommon(ValuationReconciliationTestCommon):
 
         picking_type_in = warehouse.in_type_id
         location = picking_type_in.default_location_dest_id
-
+        # Locatia trebuie sa fie child la Stock, altfel la livrari
+        # foloseste location Stock implicita
         cls.location_warehouse = location.copy(
-            {"l10n_ro_merchandise_type": "warehouse", "name": "TEST warehouse"}
+            {
+                "l10n_ro_merchandise_type": "warehouse",
+                "name": "TEST warehouse",
+                "location_id": location.id,
+            }
         )
         cls.picking_type_in_warehouse = picking_type_in.copy(
             {
@@ -244,7 +249,14 @@ class TestStockCommon(ValuationReconciliationTestCommon):
                 "sequence_code": "IN_test",
             }
         )
-
+        picking_type_out = warehouse.out_type_id
+        cls.picking_type_out_warehouse = picking_type_out.copy(
+            {
+                "default_location_src_id": cls.location_warehouse.id,
+                "name": "TEST Livrare in Depozit",
+                "sequence_code": "OUT_test",
+            }
+        )
         picking_type_transfer = warehouse.int_type_id
         cls.picking_type_transfer = picking_type_transfer.copy(
             {
@@ -386,7 +398,6 @@ class TestStockCommon(ValuationReconciliationTestCommon):
 
         self.so = so.save()
         self.so.action_confirm()
-
         self.picking = self.so.picking_ids
         self.writeOnPicking(vals)
         self.picking.action_assign()  # verifica disponibilitate
