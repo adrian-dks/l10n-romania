@@ -225,3 +225,15 @@ class StockValuationLayer(models.Model):
             account_moves._post()
 
         return res
+
+    @api.model
+    def create_from_origin(self, svl_orig, value):
+        value_out = {
+            "quantity": abs(svl_orig.quantity),
+            "value": abs(svl_orig.value),
+            "unit_cost": abs(svl_orig.unit_cost),
+            "product_id": svl_orig.product_id.id,
+        }
+
+        value_out.update(value)
+        return value_out
