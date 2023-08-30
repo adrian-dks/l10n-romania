@@ -473,12 +473,13 @@ class StockMove(models.Model):
         move = self.with_context(standard=True, valued_type="internal_transit_in")
         svls = move._create_out_svl(forced_quantity)
         for svl in svls:
-            svl.write({
+            svl.write(
+                {
                     "remaining_qty": abs(svl.quantity),
                     "remaining_value": abs(svl.value),
-                })
+                }
+            )
         return svls
-
 
     def _is_internal_transit_out(self):
         """Este o intrare din tranzit"""
@@ -518,7 +519,8 @@ class StockMove(models.Model):
                 if "l10n_ro_tracking" in value:
                     value.pop("l10n_ro_tracking")
                 sudoSvl = sudo_svl.create(sudo_svl.create_from_origin(svl_orig, value))
-                value.update({
+                value.update(
+                    {
                         "l10n_ro_tracking": [
                             (
                                 svl_orig.id,
@@ -765,17 +767,6 @@ class StockMove(models.Model):
                 move._create_account_move_line(
                     acc_src, acc_valuation, journal_id, qty, description, svl_id, cost
                 )
-        if self._is_internal_transit_in():
-            move = self.with_context(valued_type="internal_transit_in")
-            (
-                journal_id,
-                acc_src,
-                acc_dest,
-                acc_valuation,
-            ) = move._get_accounting_data_for_valuation()
-            move._create_account_move_line(
-                acc_dest, acc_valuation, journal_id, qty, description, svl_id, cost
-            )
 
         if self._is_internal_transit_out():
             move = self.with_context(valued_type="internal_transit_out")
