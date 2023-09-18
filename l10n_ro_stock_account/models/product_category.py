@@ -54,23 +54,25 @@ class ProductCategory(models.Model):
         stock_valuation, stock_output and stock_input
         are the same
         """
-        if self.env.company.l10n_ro_accounting:
-            # is a romanian company:
-            for record in self.filtered("is_l10n_ro_record"):
-                stock_input = record.property_stock_account_input_categ_id
-                stock_output = record.property_stock_account_output_categ_id
-                stock_val = record.property_stock_valuation_account_id
-                if not (stock_input == stock_output == stock_val):
-                    raise UserError(
-                        _(
-                            """For Romanian Stock Accounting the stock_input,
-                          stock_output and stock_valuation accounts must be
-                          the same for category %s"""
-                        )
-                        % record.name
+        ro_categories = self.filtered(
+            lambda x: x.l10n_ro_accounting_category
+            or self.env.company.l10n_ro_accounting
+        )
+
+        for record in ro_categories:
+            stock_input = record.property_stock_account_input_categ_id
+            stock_output = record.property_stock_account_output_categ_id
+            stock_val = record.property_stock_valuation_account_id
+            if not (stock_input == stock_output == stock_val):
+                raise UserError(
+                    _(
+                        """For Romanian Stock Accounting the stock_input,
+                      stock_output and stock_valuation accounts must be
+                      the same for category %s"""
                     )
-        else:
-            return super(ProductCategory, self)._check_valuation_accouts()
+                    % record.name
+                )
+        return super(ProductCategory, self - ro_categories)._check_valuation_accouts()
 
     @api.onchange(
         "property_stock_valuation_account_id",
@@ -88,7 +90,6 @@ class ProductCategory(models.Model):
                 record.property_stock_account_output_categ_id = (
                     record.property_stock_valuation_account_id
                 )
-
 
     def _l10n_ro_prepare_copy_values(self, values):
         for value in values:
