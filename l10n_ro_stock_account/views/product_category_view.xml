@@ -7,14 +7,8 @@
             name="inherit_id"
             ref="purchase_price_diff.view_category_property_form"
         />
-        <field name="priority" eval="52" />
+        <field name="priority" eval="53" />
         <field name="arch" type="xml">
-            <xpath
-                expr="//field[@name='property_account_creditor_price_difference_categ']"
-                position="inside"
-            >
-                <field name="l10n_ro_accounting_category" invisible="1" />
-            </xpath>
             <xpath
                 expr="//field[@name='property_account_creditor_price_difference_categ']"
                 position="attributes"
@@ -29,7 +23,10 @@
     <record id="view_product_category_stock_add_romania_form" model="ir.ui.view">
         <field name="name">view_product_category_stock_add_romania_form</field>
         <field name="model">product.category</field>
-        <field name="inherit_id" ref="stock_account.view_category_property_form" />
+        <field
+            name="inherit_id"
+            ref="stock_account.view_category_property_form_stock"
+        />
         <field name="priority" eval="51" />
         <field name="arch" type="xml">
             <xpath
@@ -46,6 +43,25 @@
                     />
                  </group>
             </xpath>
+            <xpath expr=".//field[@name='property_valuation']" position="attributes">
+                <attribute
+                    name="attrs"
+                >{'readonly':[('l10n_ro_accounting_category','=',False)]}</attribute>
+            </xpath>
+            <xpath expr=".//field[@name='property_cost_method']" position="attributes">
+                <attribute
+                    name="attrs"
+                >{'readonly':[('l10n_ro_accounting_category','=',False)]}</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_product_category_stock_change_romania_form" model="ir.ui.view">
+        <field name="name">view_product_category_stock_change_romania_form</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="account.view_category_property_form" />
+        <field name="priority" eval="54" />
+        <field name="arch" type="xml">
             <xpath
                 expr=".//field[@name='property_account_income_categ_id']"
                 position="attributes"
@@ -58,16 +74,6 @@
                 expr=".//field[@name='property_account_expense_categ_id']"
                 position="attributes"
             >
-                <attribute
-                    name="attrs"
-                >{'readonly':[('l10n_ro_accounting_category','=',False)]}</attribute>
-            </xpath>
-            <xpath expr=".//field[@name='property_valuation']" position="attributes">
-                <attribute
-                    name="attrs"
-                >{'readonly':[('l10n_ro_accounting_category','=',False)]}</attribute>
-            </xpath>
-            <xpath expr=".//field[@name='property_cost_method']" position="attributes">
                 <attribute
                     name="attrs"
                 >{'readonly':[('l10n_ro_accounting_category','=',False)]}</attribute>
@@ -104,22 +110,6 @@
                     name="attrs"
                 >{'readonly':[('l10n_ro_accounting_category','=',False)]}</attribute>
             </xpath>
-            <xpath
-                expr=".//field[@name='l10n_ro_hide_stock_in_out_account']"
-                position="attributes"
-            >
-                <attribute
-                    name="attrs"
-                >{'readonly':[('l10n_ro_accounting_category','=',False)]}</attribute>
-            </xpath>
-            <xpath
-                expr=".//field[@name='l10n_ro_stock_account_change']"
-                position="attributes"
-            >
-                <attribute
-                    name="attrs"
-                >{'readonly':[('l10n_ro_accounting_category','=',False)]}</attribute>
-            </xpath>
         </field>
     </record>
 
@@ -133,9 +123,10 @@
         <field name="arch" type="xml">
             <field name="property_stock_valuation_account_id" position="after">
                 <field name="is_l10n_ro_record" invisible="1" />
+                <field name="l10n_ro_accounting_category" invisible="1" />
                 <field
                     name="l10n_ro_stock_account_change"
-                    attrs="{'invisible': [('is_l10n_ro_record', '=', False)]}"
+                    attrs="{'invisible': [('is_l10n_ro_record', '=', False)], 'readonly':[('l10n_ro_accounting_category','=',False)]}"
                 />
                 <field name="l10n_ro_hide_stock_in_out_account" invisible="1" />
             </field>
