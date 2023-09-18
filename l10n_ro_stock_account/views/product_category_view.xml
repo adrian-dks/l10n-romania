@@ -3,7 +3,10 @@
     <record id="view_product_category_purchase_add_romania_form" model="ir.ui.view">
         <field name="name">view_product_category_purchase_add_romania_form</field>
         <field name="model">product.category</field>
-        <field name="inherit_id" ref="purchase_price_diff.view_category_property_form" />
+        <field
+            name="inherit_id"
+            ref="purchase_price_diff.view_category_property_form"
+        />
         <field name="priority" eval="52" />
         <field name="arch" type="xml">
             <xpath

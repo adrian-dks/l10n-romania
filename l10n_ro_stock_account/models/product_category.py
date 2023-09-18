@@ -72,7 +72,7 @@ class ProductCategory(models.Model):
                     )
                     % record.name
                 )
-        super(ProductCategory, self - ro_categories)._check_valuation_accouts()
+        return super(ProductCategory, self - ro_categories)._check_valuation_accouts()
 
     @api.onchange(
         "property_stock_valuation_account_id",
@@ -90,7 +90,6 @@ class ProductCategory(models.Model):
                 record.property_stock_account_output_categ_id = (
                     record.property_stock_valuation_account_id
                 )
-
 
     def _l10n_ro_prepare_copy_values(self, values):
         for value in values:
