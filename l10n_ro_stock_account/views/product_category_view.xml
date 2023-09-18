@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
+    <!--
     <record id="view_product_category_purchase_add_romania_form" model="ir.ui.view">
         <field name="name">view_product_category_purchase_add_romania_form</field>
         <field name="model">product.category</field>
@@ -20,6 +21,7 @@
             </xpath>
         </field>
     </record>
+    -->
 
     <record id="view_product_category_stock_add_romania_form" model="ir.ui.view">
         <field name="name">view_product_category_stock_add_romania_form</field>
@@ -57,6 +59,7 @@
         </field>
     </record>
 
+    <!--
     <record id="view_product_category_stock_change_romania_form" model="ir.ui.view">
         <field name="name">view_product_category_stock_change_romania_form</field>
         <field name="model">product.category</field>
@@ -113,8 +116,7 @@
             </xpath>
         </field>
     </record>
-
-    account.view_category_property_form
+    -->
 
     <record id="view_product_category_add_romania_form" model="ir.ui.view">
         <field name="name">view_product_category_add_romania_form</field>
