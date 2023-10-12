@@ -779,6 +779,7 @@ class StockMove(models.Model):
             StockMove, self
         )._get_accounting_data_for_valuation()
         valued_type = self.env.context.get("valued_type", "indefinite")
+        location_from = location_to = None
         if (
             self.is_l10n_ro_record
             and self.product_id.categ_id.l10n_ro_stock_account_change
@@ -871,7 +872,11 @@ class StockMove(models.Model):
             acc_valuation_rec = self.env["account.account"].browse(acc_valuation)
             if acc_valuation_rec and acc_valuation_rec.l10n_ro_stock_consume_account_id:
                 acc_valuation = acc_valuation_rec.l10n_ro_stock_consume_account_id.id
-        if self.is_l10n_ro_record and valued_type in ("internal_transit_out",):
+        if (
+            self.is_l10n_ro_record
+            and valued_type in ("internal_transit_out",)
+            and location_to
+        ):
             acc_dest = (
                 location_to.l10n_ro_property_stock_valuation_account_id.id or acc_dest
             )
