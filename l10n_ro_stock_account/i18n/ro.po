@@ -44,6 +44,12 @@ msgid "Companies"
 msgstr "Companii"
 
 #. module: l10n_ro_stock_account
+#: model:ir.model.fields,field_description:l10n_ro_stock_account.field_stock_quant__company_id
+#: model:ir.model.fields,field_description:l10n_ro_stock_account.field_stock_valuation_layer__company_id
+msgid "Company"
+msgstr ""
+
+#. module: l10n_ro_stock_account
 #. odoo-python
 #: code:addons/l10n_ro_stock_account/models/stock_landed_cost.py:0
 #, python-format
@@ -86,6 +92,14 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ro_stock_account.field_l10n_ro_stock_valuation_layer_tracking__id
 msgid "ID"
 msgstr "ID"
+
+#. module: l10n_ro_stock_account
+#: model:ir.model.fields,help:l10n_ro_stock_account.field_res_company__l10n_ro_stock_acc_price_diff
+msgid ""
+"If this field is checked and the company use Romanian Accounting,the "
+"currency rate differences between reception and invoice will be reflected in "
+"the stock valuation."
+msgstr ""
 
 #. module: l10n_ro_stock_account
 #: model:ir.model.fields,help:l10n_ro_stock_account.field_product_product__l10n_ro_property_stock_valuation_account_id
@@ -173,6 +187,11 @@ msgid "Last Updated on"
 msgstr ""
 
 #. module: l10n_ro_stock_account
+#: model:ir.model.fields,help:l10n_ro_stock_account.field_stock_quant__company_id
+msgid "Let this field empty if this location is shared between companies"
+msgstr ""
+
+#. module: l10n_ro_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ro_stock_account.stock_valuation_layer_revaluation_form_view
 msgid "Location"
 msgstr ""
@@ -210,6 +229,7 @@ msgstr ""
 
 #. module: l10n_ro_stock_account
 #: model:ir.model,name:l10n_ro_stock_account.model_product_template
+#: model:ir.model.fields,field_description:l10n_ro_stock_account.field_stock_valuation_layer__product_id
 msgid "Product"
 msgstr ""
 
@@ -342,6 +362,11 @@ msgid "Romania - Stock Valuation Account"
 msgstr ""
 
 #. module: l10n_ro_stock_account
+#: model:ir.model.fields,field_description:l10n_ro_stock_account.field_res_company__l10n_ro_stock_acc_price_diff
+msgid "Romania - Stock Valuation Update"
+msgstr ""
+
+#. module: l10n_ro_stock_account
 #: model:ir.model,name:l10n_ro_stock_account.model_l10n_ro_stock_valuation_layer_tracking
 msgid "Romania - Tracking layer stock valuation"
 msgstr ""
@@ -417,6 +442,11 @@ msgstr ""
 #: model:ir.model,name:l10n_ro_stock_account.model_stock_picking
 msgid "Transfer"
 msgstr "Transfer"
+
+#. module: l10n_ro_stock_account
+#: model:ir.model.fields,field_description:l10n_ro_stock_account.field_res_company__anglo_saxon_accounting
+msgid "Use anglo-saxon accounting"
+msgstr ""
 
 #. module: l10n_ro_stock_account
 #: model:ir.model,name:l10n_ro_stock_account.model_stock_valuation_adjustment_lines

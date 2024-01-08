@@ -2,13 +2,21 @@
 # Copyright (C) 2020 NextERP Romania
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    l10n_ro_accounting = fields.Boolean(string="Romania - Use Romanian Accounting")
+    l10n_ro_accounting = fields.Boolean(
+        string="Romania - Use Romanian Accounting",
+        default=True,
+        compute="_compute_l10n_ro_accounting",
+        store=True,
+    )
+    anglo_saxon_accounting = fields.Boolean(
+        string="Use anglo-saxon accounting", default=True
+    )
     l10n_ro_share_capital = fields.Float(
         string="Romania - Share Capital", digits="Account", default=200
     )
@@ -100,7 +108,7 @@ class ResCompany(models.Model):
         help="This product will be used in create the DVI landed cost"
         "for the duty tax",
     )
-    l10n_ro_property_customs_commision_product_id = fields.Many2one(
+    l10n_ro_property_customs_commission_product_id = fields.Many2one(
         "product.product",
         string="Romania - Customs Commission Landed Cost Product",
         domain="[('type', '=', 'service')]",
@@ -118,9 +126,25 @@ class ResCompany(models.Model):
         "applied strictly on a location level (including its children)",
     )
 
+    l10n_ro_restrict_stock_move_date_last_month = fields.Boolean(
+        string="Restrict Stock Move Date Last Month",
+        help="Restrict stock move posting with at most one month ago.",
+    )
+    l10n_ro_restrict_stock_move_date_future = fields.Boolean(
+        string="Restrict Stock Move Date Future",
+        help="Restrict stock move posting with future date.",
+    )
+
     def _check_is_l10n_ro_record(self, company=False):
         if not company:
             company = self
         else:
             company = self.browse(company)
         return company.l10n_ro_accounting
+
+    @api.depends("chart_template_id")
+    def _compute_l10n_ro_accounting(self):
+        for company in self:
+            company.l10n_ro_accounting = company.chart_template_id == self.env.ref(
+                "l10n_ro.ro_chart_template"
+            )

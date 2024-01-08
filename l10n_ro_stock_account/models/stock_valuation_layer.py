@@ -9,6 +9,8 @@ class StockValuationLayer(models.Model):
     _name = "stock.valuation.layer"
     _inherit = ["stock.valuation.layer", "l10n.ro.mixin"]
 
+    product_id = fields.Many2one(index=True)
+    company_id = fields.Many2one(index=True)
     l10n_ro_valued_type = fields.Char(string="Romania - Valued Type")
     l10n_ro_invoice_line_id = fields.Many2one(
         "account.move.line", string="Romania - Invoice Line"
@@ -104,12 +106,18 @@ class StockValuationLayer(models.Model):
                         # if aml.balance > 0 and svl.value > 0:
                         #     account = aml.account_id
                         #     break
-            if (
-                svl.l10n_ro_valued_type in ("reception", "reception_return")
-                and svl.l10n_ro_invoice_line_id
-            ):
-                account = svl.l10n_ro_invoice_line_id.account_id
+            if svl._l10n_ro_can_use_invoice_line_account(account):
+                if (
+                    svl.l10n_ro_valued_type in ("reception", "reception_return")
+                    and svl.l10n_ro_invoice_line_id
+                ):
+                    account = svl.l10n_ro_invoice_line_id.account_id
             svl.l10n_ro_account_id = account
+
+    # hook method for reception in progress
+    def _l10n_ro_can_use_invoice_line_account(self, account):
+        self.ensure_one()
+        return True
 
     @api.model_create_multi
     def create(self, vals_list):
