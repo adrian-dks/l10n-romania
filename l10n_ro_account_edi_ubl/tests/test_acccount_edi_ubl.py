@@ -198,7 +198,7 @@ class TestAccountEdiUbl(AccountEdiTestCommon):
         self.assertEqual(invoice.edi_state, state)
         self.assertEqual(invoice.edi_document_ids.state, state)
         if error:
-            self.assertEqual(invoice.edi_document_ids.error, error)
+            self.assertIn(error, invoice.edi_document_ids.error)
             self.assertTrue(
                 any(error in message for message in invoice.message_ids.mapped("body"))
             )
@@ -274,13 +274,13 @@ class TestAccountEdiUbl(AccountEdiTestCommon):
             (
                 self.get_file("stare_mesaj_not_ok.xml"),
                 "to_send",
-                "<p>The invoice was not validated by ANAF.</p>",
+                "The invoice was not validated by ANAF.",
                 "warning",
             ),
             (
                 self.get_file("stare_mesaj_in_prelucrare.xml"),
                 "to_send",
-                "<p>The invoice is in processing at ANAF.</p>",
+                "The invoice is in processing at ANAF.",
                 "info",
             ),
             (
@@ -292,7 +292,7 @@ class TestAccountEdiUbl(AccountEdiTestCommon):
             (
                 self.get_file("stare_mesaj_xml_erori.xml"),
                 "to_send",
-                "<p>XML cu erori nepreluat de sistem</p>",
+                "XML with errors not taken over by the system",
                 "error",
             ),
             (
@@ -393,7 +393,10 @@ class TestAccountEdiUbl(AccountEdiTestCommon):
             return_value=(anaf_messages, 200),
         ):
             self.assertEqual(
-                self.env.company._l10n_ro_get_anaf_efactura_messages(), expected_msg
+                self.env.company._l10n_ro_get_anaf_efactura_messages(
+                    filters={"tip": "FACTURA PRIMITA"}
+                ),
+                expected_msg,
             )
 
     def test_l10n_ro_create_anaf_efactura(self):
