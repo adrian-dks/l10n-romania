@@ -52,7 +52,10 @@ class AccountEdiXmlCIUSRO(models.Model):
         # for vals in vals_list:
         #     vals.pop('tax_exemption_reason', None)
         for vals in vals_list:
-            if "Invers" in taxes.name:
+            word_to_check = "Invers"
+            if any(
+                word_to_check.lower() in word.lower() for word in taxes.mapped("name")
+            ):
                 vals["id"] = "AE"
                 vals["tax_category_code"] = "AE"
                 vals["tax_exemption_reason_code"] = "VATEX-EU-AE"
@@ -65,14 +68,12 @@ class AccountEdiXmlCIUSRO(models.Model):
         return vals_list
 
     def _get_invoice_tax_totals_vals_list(self, invoice, taxes_vals):
-
-        # see:  def _export_invoice_vals(self, invoice): credit notes (out_refund) will
-        # be converted to negative values;
-        # why use balance sign here?
-        # balance_sign = -1 if invoice.is_inbound() else 1
-
         balance_sign = 1
-
+        if (
+            invoice.move_type == "out_refund"
+            and invoice.company_id.l10n_ro_credit_note_einvoice
+        ):
+            balance_sign = -balance_sign
         return [
             {
                 "currency": invoice.currency_id,
@@ -93,13 +94,55 @@ class AccountEdiXmlCIUSRO(models.Model):
             }
         ]
 
+    def _get_delivery_vals_list(self, invoice):
+        res = super()._get_delivery_vals_list(invoice)
+
+        shipping_address = False
+        if "partner_shipping_id" in invoice._fields and invoice.partner_shipping_id:
+            shipping_address = invoice.partner_shipping_id
+            if shipping_address == invoice.partner_id:
+                shipping_address = False
+        if shipping_address:
+            res = [
+                {
+                    "actual_delivery_date": invoice.invoice_date,
+                    "delivery_location_vals": {
+                        "delivery_address_vals": self._get_partner_address_vals(
+                            shipping_address
+                        ),
+                    },
+                }
+            ]
+        return res
+
+    def _get_invoice_line_vals(self, line, taxes_vals):
+        res = super()._get_invoice_line_vals(line, taxes_vals)
+        if (
+            line.move_id.move_type == "out_refund"
+            and line.company_id.l10n_ro_credit_note_einvoice
+        ):
+            if res.get("invoiced_quantity", 0):
+                res["invoiced_quantity"] = (-1) * res["invoiced_quantity"]
+            if res.get("line_extension_amount", 0):
+                res["line_extension_amount"] = (-1) * res["line_extension_amount"]
+            if res.get("tax_total_vals"):
+                for tax in res["tax_total_vals"]:
+                    if tax["tax_amount"]:
+                        tax["tax_amount"] = (-1) * tax["tax_amount"]
+                    if tax["taxable_amount"]:
+                        tax["taxable_amount"] = (-1) * tax["taxable_amount"]
+        return res
+
     def _get_invoice_line_item_vals(self, line, taxes_vals):
         vals = super()._get_invoice_line_item_vals(line, taxes_vals)
         vals["description"] = vals["description"][:200]
         vals["name"] = vals["name"][:100]
-        if vals["classified_tax_category_vals"][0]["tax_category_code"] == "AE":
-            vals["classified_tax_category_vals"][0]["tax_exemption_reason_code"] = ""
-            vals["classified_tax_category_vals"][0]["tax_exemption_reason"] = ""
+        if vals["classified_tax_category_vals"]:
+            if vals["classified_tax_category_vals"][0]["tax_category_code"] == "AE":
+                vals["classified_tax_category_vals"][0][
+                    "tax_exemption_reason_code"
+                ] = ""
+                vals["classified_tax_category_vals"][0]["tax_exemption_reason"] = ""
         return vals
 
     def _get_invoice_line_price_vals(self, line):
@@ -123,6 +166,27 @@ class AccountEdiXmlCIUSRO(models.Model):
         for val in vals_list["vals"]["invoice_line_vals"]:
             val["id"] = index
             index += 1
+        if (
+            invoice.move_type == "out_refund"
+            and invoice.company_id.l10n_ro_credit_note_einvoice
+        ):
+            if vals_list["vals"].get("legal_monetary_total_vals"):
+                vals_list["vals"]["legal_monetary_total_vals"][
+                    "tax_exclusive_amount"
+                ] = (-1) * vals_list["vals"]["legal_monetary_total_vals"][
+                    "tax_exclusive_amount"
+                ]
+                vals_list["vals"]["legal_monetary_total_vals"][
+                    "tax_inclusive_amount"
+                ] = (-1) * vals_list["vals"]["legal_monetary_total_vals"][
+                    "tax_inclusive_amount"
+                ]
+                vals_list["vals"]["legal_monetary_total_vals"]["prepaid_amount"] = (
+                    -1
+                ) * vals_list["vals"]["legal_monetary_total_vals"]["prepaid_amount"]
+                vals_list["vals"]["legal_monetary_total_vals"]["payable_amount"] = (
+                    -1
+                ) * vals_list["vals"]["legal_monetary_total_vals"]["payable_amount"]
 
         return vals_list
 
@@ -227,6 +291,7 @@ class AccountEdiXmlCIUSRO(models.Model):
                     limit=1,
                 )
                 invoice_line.tax_ids = [tax.id]
+
         return res
 
     def _import_fill_invoice_line_taxes(
@@ -244,6 +309,8 @@ class AccountEdiXmlCIUSRO(models.Model):
         invoice = super(AccountEdiXmlCIUSRO, self)._import_invoice(
             journal, filename, tree, existing_invoice=existing_invoice
         )
+        if invoice.partner_id:
+            invoice._onchange_partner_id()
         additional_docs = tree.findall("./{*}AdditionalDocumentReference")
         if len(additional_docs) == 0:
             res = self.l10n_ro_renderAnafPdf(invoice)
@@ -260,13 +327,19 @@ class AccountEdiXmlCIUSRO(models.Model):
         return invoice
 
     def l10n_ro_renderAnafPdf(self, invoice):
-        attachement = invoice.attachment_ids.filtered(
+        inv_attachments = self.env["ir.attachment"].search(
+            [
+                ("res_model", "=", "account.move"),
+                ("res_id", "=", invoice.id),
+            ]
+        )
+        attachment = inv_attachments.filtered(
             lambda x: f"{invoice.l10n_ro_edi_transaction}.xml" in x.name
         )
-        if not attachement:
+        if not attachment:
             return False
         headers = {"Content-Type": "text/plain"}
-        xml = b64decode(attachement.datas)
+        xml = b64decode(attachment.datas)
         val1 = "refund" in invoice.move_type and "FCN" or "FACT1"
         val2 = "DA"
         try:
