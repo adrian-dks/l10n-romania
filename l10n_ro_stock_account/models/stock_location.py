@@ -41,11 +41,13 @@ class StockLocation(models.Model):
     )
 
     l10n_ro_accounting_location = fields.Boolean(
+        company_dependent=True, copy=True,
         string="Is Accounting Location",
         help="Only for Romania, this define a category " "as accounting location",
     )
     l10n_ro_accounting_location_id = fields.Many2one(
         "stock.location",
+        company_dependent=True, copy=True,
         string="Parent Accounting Location",
         help="Only for Romania, link a location " "on accounting location",
     )

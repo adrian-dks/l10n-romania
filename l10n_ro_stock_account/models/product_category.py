@@ -23,16 +23,19 @@ class ProductCategory(models.Model):
     )
     l10n_ro_stock_account_change = fields.Boolean(
         string="Romania - Allow stock account change from locations",
+        company_dependent=True, copy=True,
         help="Only for Romania, to change the accounts to the ones defined "
         "on stock locations",
     )
 
     l10n_ro_accounting_category = fields.Boolean(
         string="Romania - Is Accounting Category",
+        company_dependent=True, copy=True,
         help="Only for Romania, this define a category as accounting category",
     )
     l10n_ro_accounting_category_id = fields.Many2one(
         "product.category",
+        company_dependent=True, copy=True,
         string="Romania - Parent Accounting Category",
         help="Only for Romania, link a category on accounting category",
     )
