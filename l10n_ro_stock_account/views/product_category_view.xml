@@ -36,13 +36,14 @@
                 expr="//field[@name='property_cost_method']/parent::group"
                 position="after"
             >
-                <group string="Accounting Category">
+                <field name="is_l10n_ro_record" invisible="1"/>
+                <group string="Accounting Category" attrs="{'invisible':[('is_l10n_ro_record','=',False)]}">
                     <field name="l10n_ro_accounting_category" />
                     <field
                         name="l10n_ro_accounting_category_id"
                         context="{'default_l10n_ro_accounting_category':True}"
                         domain="[('l10n_ro_accounting_category','=',True)]"
-                        attrs="{'invisible':[('l10n_ro_accounting_category','=',True)],'required':[('l10n_ro_accounting_category','=',False)]}"
+                        attrs="{'invisible':[('l10n_ro_accounting_category','=',True)],'required':[('l10n_ro_accounting_category','=',False),('is_l10n_ro_record','=',True)]}"
                     />
                  </group>
             </xpath>
