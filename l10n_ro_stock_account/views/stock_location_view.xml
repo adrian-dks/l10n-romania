@@ -6,6 +6,7 @@
             <field name="inherit_id" ref="stock_account.view_location_form_inherit" />
             <field name="arch" type="xml">
                 <xpath expr="//group[@name='additional_info']" position="after">
+                    <field name="usage" invisible="1"/>
                     <group string="Accounting Information">
                         <field
                         name="valuation_in_account_id"
@@ -24,13 +25,13 @@
                     />
                         <field
                         name="l10n_ro_accounting_location"
-                        attrs="{'invisible': [('is_l10n_ro_record', '=', False)]}"
+                        attrs="{'invisible': ['|', ('is_l10n_ro_record', '=', False),('usage','!=','internal')]}"
                     />
                         <field
                         name="l10n_ro_accounting_location_id"
                         domain="[('l10n_ro_accounting_location','=',True)]"
                         options="{'no_create': True}"
-                        attrs="{'invisible': ['|', ('is_l10n_ro_record', '=', False), ('l10n_ro_accounting_location','=',True)],'required': [('l10n_ro_accounting_location','=',False)]}"
+                        attrs="{'invisible': ['|', ('is_l10n_ro_record', '=', False), ('l10n_ro_accounting_location','=',True), ('usage','!=','internal')],'required': [('l10n_ro_accounting_location','=',False), ('usage','=','internal')]}"
                     />
                         <field
                         name="l10n_ro_property_account_income_location_id"
