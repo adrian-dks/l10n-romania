@@ -133,7 +133,6 @@ class StockMoveLine(models.Model):
 
     def _get_aggregated_product_quantities(self, **kwargs):
         agg_move_lines = super()._get_aggregated_product_quantities(**kwargs)
-
         for aggregated_move_line in agg_move_lines:
             agg_move_lines[aggregated_move_line][
                 "currency"
@@ -143,6 +142,24 @@ class StockMoveLine(models.Model):
             agg_move_lines[aggregated_move_line]["l10n_ro_price_subtotal"] = 0
             agg_move_lines[aggregated_move_line]["l10n_ro_price_tax"] = 0
             agg_move_lines[aggregated_move_line]["l10n_ro_price_total"] = 0
+
+        if not agg_move_lines:
+            for aggregated_move_line in self:
+                aggregated_properties = aggregated_move_line._get_aggregated_properties(
+                    move_line=aggregated_move_line
+                )
+                line_key = aggregated_properties["line_key"]
+                if line_key not in agg_move_lines:
+                    agg_move_lines[line_key] = {}
+                agg_move_lines[line_key][
+                    "currency"
+                ] = self.env.company.currency_id.id
+                agg_move_lines[line_key]["l10n_ro_price_unit"] = 0
+                agg_move_lines[line_key]["l10n_ro_additional_charges"] = 0
+                agg_move_lines[line_key]["l10n_ro_price_subtotal"] = 0
+                agg_move_lines[line_key]["l10n_ro_price_tax"] = 0
+                agg_move_lines[line_key]["l10n_ro_price_total"] = 0
+
         for move_line in self:
             aggregated_properties = move_line._get_aggregated_properties(
                 move_line=move_line
