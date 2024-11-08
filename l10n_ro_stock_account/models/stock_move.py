@@ -454,7 +454,7 @@ class StockMove(models.Model):
         return vals
 
     def _l10n_ro_account_entry_move(self, qty, description, svl_id, cost):
-        svl = self.env["stock.valuation.layer"]
+        svl = self.env["stock.valuation.layer"].browse(svl_id)
         if self._is_usage_giving() or self._is_consumption():
             (
                 journal_id,

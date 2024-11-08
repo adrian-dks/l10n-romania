@@ -119,8 +119,8 @@ class StockMove(models.Model):
 
     def _l10n_ro_account_entry_move(self, qty, description, svl_id, cost):
         res = super()._l10n_ro_account_entry_move(qty, description, svl_id, cost)
-        svl = self.env["stock.valuation.layer"]
-        if self._is_delivery_notice():
+        svl = self.env["stock.valuation.layer"].browse(svl_id)
+        if svl.l10n_ro_valued_type == "delivery_notice":
             # inregistrare valoare vanzare
             sale_price = -1 * self._l10n_ro_get_sale_price()
             move = self.with_context(valued_type="invoice_out_notice")
@@ -141,7 +141,7 @@ class StockMove(models.Model):
                 qty * sale_price,
             )
 
-        if self._is_delivery_notice_return():
+        if svl.l10n_ro_valued_type == "delivery_notice_return":
             # inregistrare valoare vanzare
             sale_price = self._l10n_ro_get_sale_price()
             move = self.with_context(valued_type="invoice_out_notice")
@@ -239,3 +239,23 @@ class StockMove(models.Model):
                     or acc_src
                 )
         return journal_id, acc_src, acc_dest, acc_valuation
+
+    def _get_new_picking_values(self):
+        vals = super()._get_new_picking_values()
+        picking_type = self.mapped("picking_type_id")
+        if picking_type.l10n_ro_notice_default:
+            vals["l10n_ro_notice"] = True
+        return vals
+
+    def _create_dropshipped_svl(self, forced_quantity=None):
+        valued_type = "dropshipped"
+
+        svls = super(
+            StockMove, self.with_context(valued_type=valued_type)
+        )._create_dropshipped_svl(forced_quantity)
+        for svl in svls:
+            if svl.quantity < 0:
+                svl.write({"l10n_ro_valued_type": "delivery_notice"})
+            if svl.quantity > 0:
+                svl.write({"l10n_ro_valued_type": "reception_notice"})
+        return svls
