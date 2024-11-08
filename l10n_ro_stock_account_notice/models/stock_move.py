@@ -117,50 +117,80 @@ class StockMove(models.Model):
         move = self.with_context(standard=True, valued_type="delivery_notice_return")
         return move._create_in_svl(forced_quantity)
 
+    def _account_entry_move(self, qty, description, svl_id, cost):
+        """Accounting Valuation Entries"""
+
+        am_vals = super()._account_entry_move(qty, description, svl_id, cost)
+        if not self.is_l10n_ro_record:
+            return am_vals
+
+        svl = self.env["stock.valuation.layer"].browse(svl_id)
+        delivery_vals = False
+        if svl.l10n_ro_valued_type == "delivery_notice":
+            delivery_vals = self._account_entry_move_delivery_notice(
+                qty, description, svl_id, cost
+            )
+        elif svl.l10n_ro_valued_type == "delivery_notice_return":
+            delivery_vals = self._account_entry_move_delivery_notice_return(
+                qty, description, svl_id, cost
+            )
+
+        if delivery_vals:
+            if am_vals and len(am_vals) == 1:
+                am_vals[0]["line_ids"] += delivery_vals["line_ids"]
+            else:
+                am_vals.append(delivery_vals)
+        return am_vals
+
+    def _account_entry_move_delivery_notice(self, qty, description, svl_id, cost):
+        move = self.with_context(valued_type="invoice_out_notice")
+        sale_price = -1 * self._l10n_ro_get_sale_price()
+        (
+            journal_id,
+            acc_src,
+            acc_dest,
+            acc_valuation,
+        ) = move._get_accounting_data_for_valuation()
+
+        am_vals = move._prepare_account_move_vals(
+            acc_valuation,
+            acc_dest,
+            journal_id,
+            qty,
+            description,
+            svl_id,
+            qty * sale_price,
+        )
+
+        return am_vals
+
+    def _account_entry_move_delivery_notice_return(
+        self, qty, description, svl_id, cost
+    ):
+        move = self.with_context(valued_type="invoice_out_notice")
+        sale_price = -1 * self._l10n_ro_get_sale_price()
+        (
+            journal_id,
+            acc_src,
+            acc_dest,
+            acc_valuation,
+        ) = move._get_accounting_data_for_valuation()
+
+        am_vals = move._prepare_account_move_vals(
+            acc_dest,
+            acc_valuation,
+            journal_id,
+            qty,
+            description,
+            svl_id,
+            qty * sale_price,
+        )
+
+        return am_vals
+
     def _l10n_ro_account_entry_move(self, qty, description, svl_id, cost):
         res = super()._l10n_ro_account_entry_move(qty, description, svl_id, cost)
-        svl = self.env["stock.valuation.layer"].browse(svl_id)
-        if svl.l10n_ro_valued_type == "delivery_notice":
-            # inregistrare valoare vanzare
-            sale_price = -1 * self._l10n_ro_get_sale_price()
-            move = self.with_context(valued_type="invoice_out_notice")
 
-            (
-                journal_id,
-                acc_src,
-                acc_dest,
-                acc_valuation,
-            ) = move._get_accounting_data_for_valuation()
-            move._l10n_ro_create_account_move_line(
-                acc_valuation,
-                acc_dest,
-                journal_id,
-                qty,
-                description,
-                svl,
-                qty * sale_price,
-            )
-
-        if svl.l10n_ro_valued_type == "delivery_notice_return":
-            # inregistrare valoare vanzare
-            sale_price = self._l10n_ro_get_sale_price()
-            move = self.with_context(valued_type="invoice_out_notice")
-
-            (
-                journal_id,
-                acc_src,
-                acc_dest,
-                acc_valuation,
-            ) = move._get_accounting_data_for_valuation()
-            move._l10n_ro_create_account_move_line(
-                acc_dest,
-                acc_valuation,
-                journal_id,
-                qty,
-                description,
-                svl_id,
-                qty * sale_price,
-            )
         return res
 
     def _l10n_ro_get_sale_price(self):
@@ -187,58 +217,58 @@ class StockMove(models.Model):
             )
         return valuation_amount
 
-    def _get_accounting_data_for_valuation(self):
-        (
-            journal_id,
-            acc_src,
-            acc_dest,
-            acc_valuation,
-        ) = super()._get_accounting_data_for_valuation()
-        if (
-            self.is_l10n_ro_record
-            and self.product_id.categ_id.l10n_ro_stock_account_change
-        ):
-            location_from = self.location_id
-            location_to = self.location_dest_id
-            valued_type = self.env.context.get("valued_type", "indefinite")
-
-            # in nir si factura se ca utiliza 408
-            if valued_type == "invoice_in_notice":
-                if location_to.l10n_ro_property_account_expense_location_id:
-                    acc_dest = (
-                        acc_valuation
-                    ) = location_to.l10n_ro_property_account_expense_location_id.id
-                # if location_to.property_account_expense_location_id:
-                #     acc_dest = (
-                #         acc_valuation
-                #     ) = location_to.property_account_expense_location_id.id
-            elif valued_type == "invoice_out_notice":
-                if location_to.l10n_ro_property_account_income_location_id:
-                    acc_valuation = acc_dest
-                    acc_dest = (
-                        location_to.l10n_ro_property_account_income_location_id.id
-                    )
-                if location_from.l10n_ro_property_account_income_location_id:
-                    acc_valuation = (
-                        location_from.l10n_ro_property_account_income_location_id.id
-                    )
-
-            # in Romania iesirea din stoc de face de regula pe contul de cheltuiala
-            elif valued_type in [
-                "delivery_notice",
-            ]:
-                acc_dest = (
-                    location_from.l10n_ro_property_account_expense_location_id.id
-                    or acc_dest
-                )
-            elif valued_type in [
-                "delivery_notice_return",
-            ]:
-                acc_src = (
-                    location_to.l10n_ro_property_account_expense_location_id.id
-                    or acc_src
-                )
-        return journal_id, acc_src, acc_dest, acc_valuation
+    # def _get_accounting_data_for_valuation(self):
+    #     (
+    #         journal_id,
+    #         acc_src,
+    #         acc_dest,
+    #         acc_valuation,
+    #     ) = super()._get_accounting_data_for_valuation()
+    #     if (
+    #         self.is_l10n_ro_record
+    #         and self.product_id.categ_id.l10n_ro_stock_account_change
+    #     ):
+    #         location_from = self.location_id
+    #         location_to = self.location_dest_id
+    #         valued_type = self.env.context.get("valued_type", "indefinite")
+    #
+    #         # in nir si factura se ca utiliza 408
+    #         if valued_type == "invoice_in_notice":
+    #             if location_to.l10n_ro_property_account_expense_location_id:
+    #                 acc_dest = (
+    #                     acc_valuation
+    #                 ) = location_to.l10n_ro_property_account_expense_location_id.id
+    #             # if location_to.property_account_expense_location_id:
+    #             #     acc_dest = (
+    #             #         acc_valuation
+    #             #     ) = location_to.property_account_expense_location_id.id
+    #         elif valued_type == "invoice_out_notice":
+    #             if location_to.l10n_ro_property_account_income_location_id:
+    #                 acc_valuation = acc_dest
+    #                 acc_dest = (
+    #                     location_to.l10n_ro_property_account_income_location_id.id
+    #                 )
+    #             if location_from.l10n_ro_property_account_income_location_id:
+    #                 acc_valuation = (
+    #                     location_from.l10n_ro_property_account_income_location_id.id
+    #                 )
+    #
+    #         # in Romania iesirea din stoc de face de regula pe contul de cheltuiala
+    #         elif valued_type in [
+    #             "delivery_notice",
+    #         ]:
+    #             acc_dest = (
+    #                 location_from.l10n_ro_property_account_expense_location_id.id
+    #                 or acc_dest
+    #             )
+    #         elif valued_type in [
+    #             "delivery_notice_return",
+    #         ]:
+    #             acc_src = (
+    #                 location_to.l10n_ro_property_account_expense_location_id.id
+    #                 or acc_src
+    #             )
+    #     return journal_id, acc_src, acc_dest, acc_valuation
 
     def _get_new_picking_values(self):
         vals = super()._get_new_picking_values()
