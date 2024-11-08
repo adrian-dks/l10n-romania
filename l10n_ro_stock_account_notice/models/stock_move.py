@@ -284,8 +284,9 @@ class StockMove(models.Model):
             StockMove, self.with_context(valued_type=valued_type)
         )._create_dropshipped_svl(forced_quantity)
         for svl in svls:
-            if svl.quantity < 0:
-                svl.write({"l10n_ro_valued_type": "delivery_notice"})
-            if svl.quantity > 0:
-                svl.write({"l10n_ro_valued_type": "reception_notice"})
+            if self.picking_id.l10n_ro_notice:
+                if svl.quantity < 0:
+                    svl.write({"l10n_ro_valued_type": "delivery_notice"})
+                if svl.quantity > 0:
+                    svl.write({"l10n_ro_valued_type": "reception_notice"})
         return svls

@@ -391,6 +391,7 @@ class StockMove(models.Model):
         if not self.company_id.anglo_saxon_accounting and svl.l10n_ro_valued_type in [
             "delivery",
             "delivery_notice",
+            "reception_notice",
         ]:
             (
                 journal_id,
