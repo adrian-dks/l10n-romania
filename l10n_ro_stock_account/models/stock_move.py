@@ -33,7 +33,7 @@ class StockMove(models.Model):
                 "internal_transfer",  # transfer intern
                 "usage_giving",
                 "usage_giving_return",
-                "internal_transit_out",  # stock moves trasit to internal
+                "internal_transit_out",  # stock moves transit to internal
                 "internal_transit_in",  # stock moves internal to transit
             ]
         return valued_types
@@ -234,15 +234,17 @@ class StockMove(models.Model):
         - Se creaza SVL prin metoda _create_out_svl, dar pastram remaining
         - SVL vor fi inregistrare cu - pe contul de gestiune de origine.
         """
-        move = self.with_context(standard=True, valued_type="internal_transit_in")
-        svls = move._create_out_svl(forced_quantity)
-        for svl in svls:
-            svl.write(
-                {
-                    "remaining_qty": abs(svl.quantity),
-                    "remaining_value": abs(svl.value),
-                }
-            )
+        svls = self.env["stock.valuation.layer"].sudo()
+        moves = self.with_context(standard=True, valued_type="internal_transit_in")
+        for move in moves:
+            svls |= move._create_out_svl(forced_quantity)
+            for svl in svls:
+                svl.write(
+                    {
+                        "remaining_qty": abs(svl.quantity),
+                        "remaining_value": abs(svl.value),
+                    }
+                )
         return svls
 
     def _is_internal_transit_out(self):
@@ -262,14 +264,14 @@ class StockMove(models.Model):
         svls = self.env["stock.valuation.layer"].sudo()
         moves = self.with_context(standard=True, valued_type="internal_transit_out")
         for move in moves:
-            svls |= move._create_out_svl(forced_quantity)
-            for _svl in svls:
-                _svl.write(
+            svls |= move._create_in_svl(forced_quantity)
+            for svl in svls:
+                svl.write(
                     {
-                        "quantity": abs(_svl.quantity),
-                        "value": abs(_svl.value),
-                        "remaining_qty": abs(_svl.quantity),
-                        "remaining_value": abs(_svl.value),
+                        "quantity": abs(svl.quantity),
+                        "value": abs(svl.value),
+                        "remaining_qty": abs(svl.quantity),
+                        "remaining_value": abs(svl.value),
                     }
                 )
         return svls
@@ -380,6 +382,11 @@ class StockMove(models.Model):
                 qty, description, svl_id, cost
             )
 
+        if svl.l10n_ro_valued_type == "internal_transit_in":
+            am_vals = self._account_entry_move_internal_transit_in(
+                qty, description, svl_id, cost
+            )
+
         if svl.l10n_ro_valued_type == "internal_transit_out":
             am_vals = self._account_entry_move_internal_transit_out(
                 qty, description, svl_id, cost
@@ -414,6 +421,19 @@ class StockMove(models.Model):
                 am_vals.append(anglosaxon_am_vals)
 
         return am_vals
+
+    def _account_entry_move_internal_transit_in(self, qty, description, svl_id, cost):
+        move = self.with_context(valued_type="internal_transit_in")
+        (
+            journal_id,
+            acc_src,
+            acc_dest,
+            acc_valuation,
+        ) = move._get_accounting_data_for_valuation()
+        am_vals = move._prepare_account_move_vals(
+            acc_src, acc_dest, journal_id, qty, description, svl_id, -1 * cost
+        )
+        return [am_vals]
 
     def _account_entry_move_internal_transit_out(self, qty, description, svl_id, cost):
         move = self.with_context(valued_type="internal_transit_out")
