@@ -743,7 +743,7 @@ class StockMove(models.Model):
             return price_unit
 
         account = (
-            self.product_id.property_stock_valuation_account_id
+            self.product_id.l10n_ro_property_stock_valuation_account_id
             or self.product_id.categ_id.property_stock_valuation_account_id
         )
         if self.location_id.l10n_ro_property_stock_valuation_account_id:
