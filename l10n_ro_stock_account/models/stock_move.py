@@ -730,3 +730,37 @@ class StockMove(models.Model):
     def _l10n_ro_filter_svl_on_move_line(self, domain):
         origin_svls = self.env["stock.valuation.layer"].search(domain)
         return origin_svls
+
+    def _get_price_unit(self):
+        price_unit = super()._get_price_unit()
+        if not self.is_l10n_ro_record:
+            return price_unit
+        if self.origin_returned_move_id:
+            return price_unit
+        if self.product_id.cost_method != "average":
+            return price_unit
+        if not self._is_out():
+            return price_unit
+
+        account = (
+            self.product_id.property_stock_valuation_account_id
+            or self.product_id.categ_id.property_stock_valuation_account_id
+        )
+        if self.location_id.l10n_ro_property_stock_valuation_account_id:
+            account = self.location_id.l10n_ro_property_stock_valuation_account_id
+
+        domain = [
+            ("product_id", "=", self.product_id.id),
+            ("l10n_ro_account_id", "=", account.id),
+        ]
+        valuations = self.env["stock.valuation.layer"].read_group(
+            domain,
+            ["value:sum", "quantity:sum"],
+            ["product_id"],
+        )
+        for valuation in valuations:
+            val = round(valuation["value"], 2)
+            quantity = round(valuation["quantity"], 2)
+            if quantity:
+                price_unit = val / quantity
+        return price_unit
