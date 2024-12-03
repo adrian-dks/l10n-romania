@@ -752,6 +752,7 @@ class StockMove(models.Model):
         domain = [
             ("product_id", "=", self.product_id.id),
             ("l10n_ro_account_id", "=", account.id),
+            ("id", "not in", self.stock_valuation_layer_ids.ids),
         ]
         valuations = self.env["stock.valuation.layer"].read_group(
             domain,
@@ -764,3 +765,20 @@ class StockMove(models.Model):
             if quantity:
                 price_unit = val / quantity
         return price_unit
+
+    def _get_out_svl_vals(self, forced_quantity):
+        svl_values = super()._get_out_svl_vals(forced_quantity)
+        for svl_value in svl_values:
+            if svl_value["quantity"] >= 0:
+                continue
+            stock_move_id = svl_value["stock_move_id"]
+            for move in self:
+                if (
+                    move.id == stock_move_id
+                    and move.product_id.cost_method == "average"
+                ):
+                    svl_value["unit_cost"] = move._get_price_unit()
+                    svl_value["value"] = svl_value["quantity"] * svl_value["unit_cost"]
+                    _logger.debug(svl_value)
+
+        return svl_values
