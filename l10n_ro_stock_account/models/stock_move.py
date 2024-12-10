@@ -283,7 +283,7 @@ class StockMove(models.Model):
         # currency = company.currency_id
         moves = self.with_context(standard=True, valued_type="internal_transit_out")
         for move in moves:
-            svls |= move._create_out_svl(forced_quantity)
+            svls |= move._create_in_svl(forced_quantity)
             for svl in svls:
                 svl.write(
                     {
