@@ -242,12 +242,14 @@ class StockMove(models.Model):
         for move in moves:
             svls |= move._create_out_svl(forced_quantity)
             for svl in svls:
-                svl.write(
-                    {
-                        "remaining_qty": abs(svl.quantity),
-                        "remaining_value": abs(svl.value),
-                    }
-                )
+                if svl.quantity > 0:
+                    svl.write(
+                        {
+                            "remaining_qty": svl.quantity,
+                            "remaining_value": svl.value,
+                        }
+                    )
+
             # vls_vals = move._prepare_common_svl_vals()
             # quantity = forced_quantity or move.quantity
             # product = move.product_id
