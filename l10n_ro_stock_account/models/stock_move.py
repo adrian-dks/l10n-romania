@@ -241,6 +241,7 @@ class StockMove(models.Model):
         moves = self.with_context(standard=True, valued_type="internal_transit_in")
         for move in moves:
             svls |= move._create_out_svl(forced_quantity)
+            amount = 0
             for svl in svls:
                 if svl.quantity > 0:
                     svl.write(
@@ -249,6 +250,8 @@ class StockMove(models.Model):
                             "remaining_value": svl.value,
                         }
                     )
+                amount += svl.value / (svl.quantity or 1)
+            move.price_unit = amount  #
 
             # vls_vals = move._prepare_common_svl_vals()
             # quantity = forced_quantity or move.quantity
@@ -283,7 +286,14 @@ class StockMove(models.Model):
         # currency = company.currency_id
         moves = self.with_context(standard=True, valued_type="internal_transit_out")
         for move in moves:
-            svls |= move._create_in_svl(forced_quantity)
+            valued_move_lines = move._get_out_move_lines()
+            valued_quantity = 0
+            for valued_move_line in valued_move_lines:
+                valued_quantity += valued_move_line.product_uom_id._compute_quantity(
+                    valued_move_line.quantity, move.product_id.uom_id
+                )
+
+            svls |= move._create_in_svl(forced_quantity or valued_quantity)
             for svl in svls:
                 svl.write(
                     {
