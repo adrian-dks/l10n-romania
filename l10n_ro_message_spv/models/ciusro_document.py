@@ -28,7 +28,7 @@ class L10nRoEdiDocument(models.Model):
             method="GET",
             params={"id": key_download},
         )
-        if "error" in result:
+        if result.get("error", False):
             return result
 
         # E-Factura gives download response in ZIP format
