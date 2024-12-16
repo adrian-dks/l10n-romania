@@ -19,12 +19,6 @@
         "views/account_invoice.xml",
         "views/message_spv_view.xml",
     ],
-    "assets": {
-        "web.assets_backend": [
-            "l10n_ro_message_spv/static/src/js/message_spv.esm.js",
-            "l10n_ro_message_spv/static/src/js/message_spv.xml",
-        ],
-    },
     "license": "AGPL-3",
     "version": "17.0.1.11.0",
     "author": "Terrabit," "Odoo Community Association (OCA)",

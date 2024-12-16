@@ -492,3 +492,6 @@ class MessageSPV(models.Model):
                         }
                     )
                 message.write({"partner_id": partner.id})
+
+    def refresh(self):
+        self.env.company.l10n_ro_download_message_spv()
