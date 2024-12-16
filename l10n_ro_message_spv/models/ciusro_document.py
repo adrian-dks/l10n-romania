@@ -84,9 +84,13 @@ class L10nRoEdiDocument(models.Model):
             params=params,
             method="GET",
         )
+
         if "error" not in result:
             content = result["content"]
             doc = json.loads(content.decode("utf-8"))
+            if doc.get("status", False) == "401":
+                _logger.error("401 Unauthorized")
+                return False
             company_messages = list(
                 filter(
                     lambda m: m.get("cif") == cif,
