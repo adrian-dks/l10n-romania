@@ -634,6 +634,9 @@ class StockMove(models.Model):
         )
         location_to_account = location_to.l10n_ro_property_stock_valuation_account_id
 
+        company = self.company_id
+        stock_transfer_account = company.l10n_ro_property_stock_transfer_account_id
+
         allow_accounts_change = self.product_id.categ_id.l10n_ro_stock_account_change
         operations_not_allowed = ["usage_giving_secondary"]
         if allow_accounts_change and valued_type not in operations_not_allowed:
@@ -693,30 +696,45 @@ class StockMove(models.Model):
                     or acc_src
                 )
 
-        if valued_type in ("consumption", "usage_giving"):
-            acc_dest_rec = self.env["account.account"].browse(acc_dest)
-            if acc_dest_rec and acc_dest_rec.l10n_ro_stock_consume_account_id:
-                acc_dest = acc_dest_rec.l10n_ro_stock_consume_account_id.id
-            acc_valuation_rec = self.env["account.account"].browse(acc_valuation)
-            if acc_valuation_rec and acc_valuation_rec.l10n_ro_stock_consume_account_id:
-                acc_valuation = acc_valuation_rec.l10n_ro_stock_consume_account_id.id
-        if valued_type in ("consumption_return", "usage_giving_return"):
-            acc_src_rec = self.env["account.account"].browse(acc_src)
-            if acc_src_rec and acc_src_rec.l10n_ro_stock_consume_account_id:
-                acc_src = acc_src_rec.l10n_ro_stock_consume_account_id.id
-            acc_valuation_rec = self.env["account.account"].browse(acc_valuation)
-            if acc_valuation_rec and acc_valuation_rec.l10n_ro_stock_consume_account_id:
-                acc_valuation = acc_valuation_rec.l10n_ro_stock_consume_account_id.id
+        if stock_transfer_account:
+            if valued_type == "internal_transit_out":
+                acc_src = stock_transfer_account.id
+            elif valued_type == "internal_transit_in":
+                acc_dest = stock_transfer_account.id
 
-        # if valued_type == "internal_transit_out":
-        #     acc_dest = location_to_account.id or acc_dest
-        #     acc_valuation = location_to_account.id or acc_dest
+        if valued_type in ("consumption", "usage_giving"):
+            acc_src, acc_dest, acc_valuation = self._l10n_ro_get_account_cons(
+                acc_src, acc_dest, acc_valuation
+            )
+
+        if valued_type in ("consumption_return", "usage_giving_return"):
+            acc_src, acc_dest, acc_valuation = self._l10n_ro_get_account_cons_return(
+                acc_src, acc_dest, acc_valuation
+            )
 
         journal_id = self._l10n_ro_get_journal_id(
             location_from, location_to, journal_id
         )
 
         return journal_id, acc_src, acc_dest, acc_valuation
+
+    def _l10n_ro_get_account_cons(self, acc_src, acc_dest, acc_valuation):
+        acc_dest_rec = self.env["account.account"].browse(acc_dest)
+        if acc_dest_rec and acc_dest_rec.l10n_ro_stock_consume_account_id:
+            acc_dest = acc_dest_rec.l10n_ro_stock_consume_account_id.id
+        acc_valuation_rec = self.env["account.account"].browse(acc_valuation)
+        if acc_valuation_rec and acc_valuation_rec.l10n_ro_stock_consume_account_id:
+            acc_valuation = acc_valuation_rec.l10n_ro_stock_consume_account_id.id
+        return acc_src, acc_dest, acc_valuation
+
+    def _l10n_ro_get_account_cons_return(self, acc_src, acc_dest, acc_valuation):
+        acc_src_rec = self.env["account.account"].browse(acc_src)
+        if acc_src_rec and acc_src_rec.l10n_ro_stock_consume_account_id:
+            acc_src = acc_src_rec.l10n_ro_stock_consume_account_id.id
+        acc_valuation_rec = self.env["account.account"].browse(acc_valuation)
+        if acc_valuation_rec and acc_valuation_rec.l10n_ro_stock_consume_account_id:
+            acc_valuation = acc_valuation_rec.l10n_ro_stock_consume_account_id.id
+        return acc_src, acc_dest, acc_valuation
 
     def _l10n_ro_get_journal_id(self, location_from, location_to, journal_id):
         journal_to_id = False
