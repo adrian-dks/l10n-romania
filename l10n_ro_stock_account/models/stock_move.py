@@ -769,15 +769,25 @@ class StockMove(models.Model):
             return price_unit
         if self.product_id.cost_method != "average":
             return price_unit
-        if not self._is_out():
-            return price_unit
 
         account = (
             self.product_id.l10n_ro_property_stock_valuation_account_id
             or self.product_id.categ_id.property_stock_valuation_account_id
         )
-        if self.location_id.l10n_ro_property_stock_valuation_account_id:
-            account = self.location_id.l10n_ro_property_stock_valuation_account_id
+
+        if self._is_out():
+            if self.location_id.l10n_ro_property_stock_valuation_account_id:
+                account = self.location_id.l10n_ro_property_stock_valuation_account_id
+        elif self._is_in():
+            # ajustarea de inventar pozitiva sa se faca la pretul din locatie
+            if self.price_unit:
+                return price_unit
+            if self.location_dest_id.l10n_ro_property_stock_valuation_account_id:
+                account = (
+                    self.location_dest_id.l10n_ro_property_stock_valuation_account_id
+                )
+        else:
+            return price_unit
 
         domain = [
             ("product_id", "=", self.product_id.id),
