@@ -75,6 +75,8 @@ class ResPartner(models.Model):
     def check_vat(self):
         if self.env.context.get("no_vat_validation"):
             return
+        if not self.is_company:
+            return
         partners = self.filtered(lambda p: p.country_id.code == "RO")
         # if partners:
         #     partners._check_vat_ro()
@@ -312,7 +314,7 @@ class ResPartner(models.Model):
     @api.onchange("vat", "country_id")
     def ro_vat_change(self):
         res = {}
-        if self.is_l10n_ro_record and not self.parent_id:
+        if self.is_l10n_ro_record and not self.parent_id and self.is_company:
             if not self.env.context.get("skip_ro_vat_change"):
                 if not self.vat:
                     return res
