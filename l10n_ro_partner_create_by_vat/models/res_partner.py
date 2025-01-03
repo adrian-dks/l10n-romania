@@ -75,8 +75,6 @@ class ResPartner(models.Model):
     def check_vat(self):
         if self.env.context.get("no_vat_validation"):
             return
-        if not self.is_company:
-            return
         partners = self.filtered(lambda p: p.country_id.code == "RO")
         # if partners:
         #     partners._check_vat_ro()
